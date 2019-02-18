@@ -1,0 +1,42 @@
+#screen{
+  width: 95%;
+  height: 90%;
+  border:1px solid black;
+  margin-left: auto;
+  margin-right: auto;
+  overflow:hidden;
+}
+
+#location{
+  background-image:url("../tiles/ground.png");
+  position:relative;
+  border:50vmax solid black;
+}
+
+#up,#down{
+  position: relative;
+  float: left;
+  background-image:url("../tiles/ground.png");
+}
+
+#player{
+  background-image:url("../sprites/down.png");
+  background-size: cover;
+  width:10vmax;
+  height:10vmax;
+  position: relative;
+  z-index: 999;
+}
+
+body{
+  text-align:center;
+}
+
+.shadow {
+    position: absolute;
+    width: 8%;
+    height: 0.5vh;
+    background: black;
+    z-index: 998;
+    border-radius: 50%;
+}
