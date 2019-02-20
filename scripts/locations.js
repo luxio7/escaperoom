@@ -287,15 +287,14 @@ function positionPlayer(new_x,new_y){
   y = new_y;
   screen_height = parseInt($("#screen").css("height"));
   screen_width = parseInt($("#screen").css("width"));
-  $("#location").css("left", x*vmax(10)-vmax(50));
-  $("#location").css("top",  y*vmax(10)-vmax(50));
+  $("#location").css("left", -x*vmax(10)-vmax(10));
+  $("#location").css("top",  -y*vmax(10)-vmax(30));
   location_top = parseInt($("#location").css("top"));
   location_left = parseInt($("#location").css("left"));
   location_width = parseInt($("#location").css("width"));
   location_height = parseInt($("#location").css("height"));
-  $("#player").css("top",location_top);
-  $("#player").css("left",location_left);
-  $("#")
+  $("#player").css("top",-location_top-vmax(30));
+  $("#player").css("left",-location_left-vmax(10));
   /*  er zijn geen borders meer
   $("#borderTop").css("top", -y*vmax(10));
   $("#borderTop").css("left", -x*vmax(10) + vmax(10));
