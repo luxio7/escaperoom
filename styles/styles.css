@@ -40,3 +40,16 @@ body{
     z-index: 998;
     border-radius: 50%;
 }
+
+.touch {
+  opacity: 1;
+}
+
+#touchContainer {
+  display: flex;
+  
+}
+
+div {
+  image-rendering: pixelated;
+}
