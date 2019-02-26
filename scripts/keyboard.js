@@ -5,6 +5,11 @@ var speed=200;
 var facing='down';
 var goDown=false;
 
+var walking_down = false;
+var walking_up = false;
+var walking_left = false;
+var walking_right = false;
+
 function vh(v) {
   var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
   return (v * h) / 100;
@@ -49,220 +54,156 @@ function thereIsLedge(pos_x, pos_y, where){
   return thereIs;
 }
 
-function checkUp(pos_x,pos_y){
-    if (pos_y == 0){
-      if (north_c!='none'){
-        if (thereIsBarrier(pos_x,(height_north)/10, "up")){
-          return false;
-        }
-        else {
-          return true;
-        }
-      }
-      else{
-        return false;
-      }
-    }
-    return true;
-}
 
-function checkDown(pos_x,pos_y){
-    if (pos_y > (height)/10){
-      if (south_c!='none'){
-        if (thereIsBarrier(pos_x,1, "down")){
-          return false;
-        }
-        else {
-          return true;
-        }
-      }
-      else{
-        return false;
-      }
-    }
-    return true;
-}
-
-var walking_down = false;
-var walking_up = false;
-var walking_left = false;
-var walking_right = false;
 
 function movePlayer(){
-    //walking = true;
+    //waar je staat
     [pos_x,pos_y] = obtainPlayerPosition();
-    if (walking_up && walking==false){ //up
-      walking = true;
-      facing = 'up';
-      if (checkUp(pos_x,pos_y-1)==false){
-        $("#player").css("background-image","url(sprites/up.png)");
-        walking_up=false;
-        walking=false;
-        return;
+  
+    //1 naar boven en starten met wandelen
+    //  walkUp is om de handen zo te laten bewegen 
+    
+      if (walking_up && walking==false){
+        $("#player").css("background-image","url(sprites/up.png)")
+        if (stappen[pos_x][pos_y-1]) {
+        walking = true;
+        facing = 'up';
+        if (walkUp=='right'){
+          $("#player").css("background-image","url(sprites/walkingUpRight.png)");
+          walkUp='left';
+        }
+        else if (walkUp=='left'){
+          $("#player").css("background-image","url(sprites/walkingUpLeft.png)");
+          walkUp='right';
+        }
+      //laat ventje bewegen
+        moveEverythingUp(vmax(10));
+        actualTop = parseInt($("#player").css("top"));
+        newTop = actualTop-vmax(10);
+        $("#player").animate({
+            'top':newTop
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/up.png)");
+            checkIfLocationChanged();
+            refreshPlayerPositionData();
+            checkIfInWarp();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x][pos_y-1]);
       }
-      if (thereIsBarrier(pos_x, pos_y-1,"location")){
-        $("#player").css("background-image","url(sprites/up.png)");
-        walking_up=false;
-        walking=false;
-        return;
-      }
-      if (thereIsLedge(pos_x,pos_y-1,"location")){
-        $("#player").css("background-image","url(sprites/up.png)");
-        walking_up=false;
-        walking=false;
-        return;
-      }
-      if (walkUp=='right'){
-        $("#player").css("background-image","url(sprites/walkingUpRight.png)");
-        walkUp='left';
-      }
-      else if (walkUp=='left'){
-        $("#player").css("background-image","url(sprites/walkingUpLeft.png)");
-        walkUp='right';
-      }
-      moveEverythingUp(vmax(10));
-      actualTop = parseInt($("#player").css("top"));
-      newTop = actualTop-vmax(10);
-      $("#player").animate({
-          'top':newTop
-      },speed,function(){
-          $("#player").css("background-image","url(sprites/up.png)");
-          checkIfLocationChanged();
-          refreshPlayerPositionData();
-          checkIfInWarp();
-          movePlayer();      // move Player until the gamer stops pressing
-      });
-    }
+    }     
+  
+    //2 naar beneden wandelen
+  
     else if (walking_down && walking==false){ //down
-      walking = true;
-      facing = 'down';
-      if (checkDown(pos_x,pos_y+1)==false){
-        $("#player").css("background-image","url(sprites/down.png)");
-        walking_down=false;
-        walking=false;
-        checkIfInRugWarp();
-        return;
+      $("#player").css("background-image","url(sprites/down.png)")
+      if (stappen[pos_x][pos_y+1]){
+        walking = true;
+        facing = 'down';
+
+        if (walkDown=='right'){
+          $("#player").css("background-image","url(sprites/walkingDownRight.png)");
+          walkDown='left';
+        }
+        else if (walkDown=='left'){
+          $("#player").css("background-image","url(sprites/walkingDownLeft.png)");
+          walkDown='right';
+        }
+        moveEverythingUp(-1*vmax(10));
+        actualTop = parseInt($("#player").css("top"));
+        newTop = actualTop+vmax(10);
+        $("#player").animate({
+            'top':newTop
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/down.png)");
+            checkIfLocationChanged();
+            refreshPlayerPositionData();
+            checkIfInWarp();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x][pos_y+1]);
       }
-      if (thereIsBarrier(pos_x,pos_y+1,"location")){
-        $("#player").css("background-image","url(sprites/down.png)");
-        walking_down=false;
-        walking=false;
-        checkIfInRugWarp();
-        return;
-      }
-      if (thereIsLedge(pos_x,pos_y+1,"location")){
-        $("#player").css("background-image","url(sprites/down.png)");
-        jumpDown();
-        return;
-      }
-      if (walkDown=='right'){
-        $("#player").css("background-image","url(sprites/walkingDownRight.png)");
-        walkDown='left';
-      }
-      else if (walkDown=='left'){
-        $("#player").css("background-image","url(sprites/walkingDownLeft.png)");
-        walkDown='right';
-      }
-      moveEverythingUp(-1*vmax(10));
-      actualTop = parseInt($("#player").css("top"));
-      newTop = actualTop+vmax(10);
-      $("#player").animate({
-          'top':newTop
-      },speed,function(){
-          $("#player").css("background-image","url(sprites/down.png)");
-          checkIfLocationChanged();
-          refreshPlayerPositionData();
-          checkIfInWarp();
-          movePlayer();
-      });
-    }
+  }
+    //3 naar links wandelen
+  
     else if (walking_left && walking==false){ //left
-      walking=true;
-      facing = 'left';
-      if (parseInt($("#location").css("left")) == vmax(50)){
-        $("#player").css("background-image","url(sprites/left.png)");
-        walking_left=false;
-        walking=false;
-        return;
-      }
-      if (thereIsBarrier(pos_x-1,pos_y,"location")){
-        $("#player").css("background-image","url(sprites/left.png)");
-        walking_left=false;
-        walking=false;
-        return;
-      }
-      if (thereIsLedge(pos_x-1,pos_y,"location")){
-        $("#player").css("background-image","url(sprites/left.png)");
-        walking_left=false;
-        walking=false;
-        return;
-      }
-      $("#player").css("background-image","url(sprites/walkingLeft.png)");
-      moveEverythingLeft(vmax(10));
-      actualLeft = parseInt($("#player").css("left"));
-      newLeft = actualLeft-vmax(10);
-      $("#player").animate({
-          'left':newLeft
-      },speed,function(){
+      $("#player").css("background-image","url(sprites/left.png)")
+      if (stappen[pos_x-1][pos_y]) {
+        walking=true;
+        facing = 'left';
+        if (parseInt($("#location").css("left")) == vmax(50)){
           $("#player").css("background-image","url(sprites/left.png)");
-          checkIfLocationChanged();
-          refreshPlayerPositionData();
-          checkIfInWarp();
-          movePlayer();
-      });
-    }
+          walking_left=false;
+          walking=false;
+          return;
+        }
+
+        $("#player").css("background-image","url(sprites/walkingLeft.png)");
+        moveEverythingLeft(vmax(10));
+        actualLeft = parseInt($("#player").css("left"));
+        newLeft = actualLeft-vmax(10);
+        $("#player").animate({
+            'left':newLeft
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/left.png)");
+            checkIfLocationChanged();
+            refreshPlayerPositionData();
+            checkIfInWarp();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x-1][pos_y]);
+      }
+  }
+    //4 naar rechts wandelen
+  
     else if (walking_right && walking==false){ //right
-      walking=true;
-      facing='right';
-      if (parseInt($("#location").css("left")) == -(parseInt($("#location").css("width")) - vmax(50))){
-        $("#player").css("background-image","url(sprites/right.png)");
-        walking_right=false;
-        walking=false;
-        return;
-      }
-      if (thereIsBarrier(pos_x+1,pos_y,"location")){
-        $("#player").css("background-image","url(sprites/right.png)");
-        walking_right=false;
-        walking=false;
-        return;
-      }
-      if (thereIsLedge(pos_x+1,pos_y,"location")){
-        $("#player").css("background-image","url(sprites/right.png)");
-        walking_right=false;
-        walking=false;
-        return;
-      }
-      $("#player").css("background-image","url(sprites/walkingRight.png)");
-      moveEverythingLeft(-1*vmax(10));
-      actualLeft = parseInt($("#player").css("left"));
-      newLeft = actualLeft+vmax(10);
-      $("#player").animate({
-          'left':newLeft
-      },speed,function(){
+      $("#player").css("background-image","url(sprites/right.png)")
+      if (stappen[pos_x+1][pos_y]) {
+        walking=true;
+        facing='right';
+        if (parseInt($("#location").css("left")) == -(parseInt($("#location").css("width")) - vmax(50))){
           $("#player").css("background-image","url(sprites/right.png)");
-          checkIfLocationChanged();
-          refreshPlayerPositionData();
-          checkIfInWarp();
-          movePlayer();
-      });
+          walking_right=false;
+          walking=false;
+          return;
+        }
+
+        $("#player").css("background-image","url(sprites/walkingRight.png)");
+        moveEverythingLeft(-1*vmax(10));
+        actualLeft = parseInt($("#player").css("left"));
+        newLeft = actualLeft+vmax(10);
+        $("#player").animate({
+            'left':newLeft
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/right.png)");
+            checkIfLocationChanged();
+            refreshPlayerPositionData();
+            checkIfInWarp();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x+1][pos_y]);
+      }
     }
 }
 
-$(window).keydown(function(e){
-  if (e.which >=37 && e.which <=40){
-      if (walking_down || walking_up || walking_left || walking_right || walking) // if already walking, ignore any input
-        return;
-      if (e.which==37)
-        walking_left = true;
-      else if (e.which==38)
-        walking_up = true;
-      else if (e.which==39)
-        walking_right = true;
-      else if (e.which == 40)
-        walking_down = true;
-      movePlayer();
-  }
-  if (e.which == 88){
+function touchGo(dir){
+    if (walking_down || walking_up || walking_left || walking_right || walking) // if already walking, ignore any input
+      return;
+    if (dir == 'left')
+      walking_left = true;
+    else if (dir == 'up')
+      walking_up = true;
+    else if (dir == 'right')
+      walking_right = true;
+    else if (dir == 'down')
+      walking_down = true;
+    movePlayer();
+  
+  if (false){   //TODO nog knop maken om dingen te lezen en dan is dat met dit ofzo
     if (walking)
       return;
     if (facing == 'up'){
@@ -298,16 +239,14 @@ $(window).keydown(function(e){
       }
     }
   }
-});
+};
 
-$(window).keyup(function(e){
-    if (e.which >=37 || e.which <=40){
-      walking_down=false;
-      walking_up=false;
-      walking_left=false;
-      walking_right=false;
-    }
-});
+function touchStop(){
+    walking_down=false;
+    walking_up=false;
+    walking_left=false;
+    walking_right=false;
+};
 
 function isInRug(pos_x,pos_y){
   var found=false;
@@ -543,3 +482,4 @@ function moveEverythingUp(value){
       'top':newLeft
     },speed);
 }
+

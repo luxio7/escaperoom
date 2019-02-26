@@ -8,6 +8,8 @@ var screen_height;
 var screen_width;
 var location_name;
 var music = "none";
+var kamer;
+var stappen;
 
 var width_north=-1, height_north=-1;
 var width_south=-1, height_south=-1;
@@ -41,6 +43,14 @@ function loadDataOfPlayer(){
           }
     }
     rawFile.send(null);
+}
+
+function printArray(arrayToPrint) {
+    for(var i = 0; i < arrayToPrint.length; i++) {
+      for(var z = 0; z < arrayToPrint[i].length; z++) {
+        console.log(i + "x" + z + ":" + arrayToPrint[z][i]);
+      }
+    }
 }
 
 function loadLocation(name, start){
@@ -100,6 +110,17 @@ function loadLocation(name, start){
                     w_h = size.split("x");
                     width = parseInt(w_h[0]*10);
                     height = parseInt(w_h[1]*10);
+                    
+                    kamer = new Array(parseInt(w_h[0])+2);
+                    for (var i = 0; i < parseInt(w_h[0])+2; i++) {
+                      kamer[i] = new Array(parseInt(w_h[1])+2).fill("empty");
+                    }
+                    
+                    stappen = new Array(parseInt(w_h[0])+2);
+                    for (var i = 0; i < parseInt(w_h[0])+2; i++) {
+                      stappen[i] = new Array(parseInt(w_h[1])+2).fill(0);
+                    } 
+                    
                   }
                   if (property == "up"){
                     info_connect = value.split(",");
@@ -121,30 +142,41 @@ function loadLocation(name, start){
                     elemento.style.width = '10vmax';
                     elemento.style.height = '10vmax';
                     pos = value.split(",");
-                    pos_x = pos[0];
-                    pos_y = pos[1];
+                    pos_x = parseInt(pos[0]);
+                    pos_y = parseInt(pos[1]);
+                    elemento.id = 'x'+pos_x+'y'+pos_y;
                     elemento.style.backgroundImage = "url('tiles/"+property+"')";
                     elemento.style.backgroundSize = 'cover';
                     $("#location").append(elemento);
                     elemento.style.position = 'absolute';
                     elemento.style.left = String(pos_x*10 - 10)+'vmax';
                     elemento.style.top = String(pos_y*10 - 10)+'vmax';
-                    if (property.indexOf("ground")>-1)
+                    if (property.indexOf("ground")>-1){ //{} dit overal zetten want 2 lijnen
                       $(elemento).addClass("ground");
-                    else if (property.indexOf("water")>-1)
+                      kamer[pos_x][pos_y] = "ground";
+                      stappen[pos_x][pos_y] = 1;
+                    }
+                    else if (property.indexOf("water")>-1){
                       $(elemento).addClass("water");
-                    else if (property.indexOf("grass")>-1)
+                      kamer[pos_x][pos_y] = "water";
+                    }
+                    else if (property.indexOf("grass")>-1){
                       $(elemento).addClass("grass");
-                    else if (property.indexOf("door")>-1)
+                      kamer[pos_x][pos_y] = "grass";
+                    }
+                    else if (property.indexOf("door")>-1){
                       $(elemento).addClass("door");
-                    else if (property.indexOf("stairs")>-1)
+                      kamer[pos_x][pos_y] = "door";
+                    }
+                    else if (property.indexOf("stairs")>-1){
                       $(elemento).addClass("stairs");
-                    else if (property.indexOf("rug")>-1)
+                      kamer[pos_x][pos_y] = "stairs";
+                      stappen[pos_x][pos_y] = 1;
+                    }
+                    else if (property.indexOf("rug")>-1){
                       $(elemento).addClass("rug");
-                    else if (property.indexOf("ledge")>-1)
-                      $(elemento).addClass("ledge");
-                    else {
-                      $(elemento).addClass("barrier");
+                      kamer[pos_x][pos_y] = "rug";
+                      stappen[pos_x][pos_y] = 1;
                     }
                   }
                   else if (property.indexOf("sign")>-1 || property.indexOf("warp")>-1){
@@ -169,6 +201,10 @@ function loadLocation(name, start){
                     }
                   }
                 }
+                
+                console.log(kamer);
+                printArray(kamer);
+              
                 $("#location").css("width",width+"vmax");
                 $("#location").css("height",height+"vmax");
                 border_s = 'tiles/'+border;

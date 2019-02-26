@@ -1,7 +1,6 @@
 #screen{
   width: 95%;
   height: 90%;
-  border:1px solid black;
   margin-left: auto;
   margin-right: auto;
   overflow:hidden;
@@ -25,7 +24,7 @@
   width:10vmax;
   height:10vmax;
   position: relative;
-  z-index: 999;
+  z-index: 998;
 }
 
 body{
@@ -37,17 +36,40 @@ body{
     width: 8%;
     height: 0.5vh;
     background: black;
-    z-index: 998;
+    z-index: 997;
     border-radius: 50%;
-}
-
-.touch {
-  opacity: 1;
 }
 
 #touchContainer {
   display: flex;
-  
+  z-index: 999;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  position: fixed;
+  right: 0;
+  left: 0;
+  top: 0;
+  z-index:999;
+  opacity: 0;
+}
+
+#touchMiddle {
+  display: flex;
+  flex-direction: row;
+  opacity: 0;
+}
+
+.touchbar {
+  opacity: 0; /* 1 is zien, 0 is niet zien */
+  height: 33%;
+  width: 100%;
+}
+
+.touchHor {
+  opacity: 0; /* 1 is zien, 0 is niet zien */
+  height: 100%;
+  width: 50%;
 }
 
 div {

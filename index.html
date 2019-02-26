@@ -33,13 +33,13 @@
 
 </div>
   
-<div class='touch' id='touchContainer'>
-  <div class='touch' id='touchUp'></div>
-  <div class='touch' id='touchMiddle'>
-    <div class='touch' id='touchLeft'></div>
-    <div class='touch' id='touchRight'></div>
+<div id='touchContainer'>
+  <div class='touchbar' id='touchUp' onpointerdown='touchStop(); touchGo("up")' onpointerup='touchStop()'></div>
+  <div class='touchbar' id='touchMiddle'>
+    v<div class='touchHor' id='touchLeft' onpointerdown='touchStop(); touchGo("left")' onpointerup='touchStop()'></div>
+    <div class='touchHor' id='touchRight' onpointerdown='touchStop(); touchGo("right")' onpointerup='touchStop()'></div>
   </div>
-  <div class='touch' id='touchBottom'></div>
+  <div class='touchbar' id='touchBottom' onpointerdown='touchStop(); touchGo("down")' onpointerup='touchStop()'></div>
 </div>
   
 <p>Location: <span id='locationOfPlayer'></span></p>
