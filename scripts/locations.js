@@ -10,6 +10,9 @@ var location_name;
 var music = "none";
 var kamer;
 var stappen;
+var canWarp = false;
+
+var warps = {};
 
 var width_north=-1, height_north=-1;
 var width_south=-1, height_south=-1;
@@ -184,6 +187,11 @@ function loadLocation(name, start){
                     id_element = element_info[0];
                     pos_x = element_info[1];
                     pos_y = element_info[2];
+                    
+                    warps[pos_x+"x"+pos_y] = element_info[3]+element_info[4]+element_info[5];
+                    //bv: warp:1,8,pt_house1_f1,4,4
+                    
+                    
                     elemento = document.createElement("div");
                     elemento.style.width = '10vmax';
                     elemento.style.height = '10vmax';
@@ -198,6 +206,7 @@ function loadLocation(name, start){
                     if (property.indexOf("warp")>-1){
                       $(elemento).addClass("warp");
                       $(elemento).prop("id", "warp-"+id_element);
+                      
                     }
                   }
                 }
@@ -216,6 +225,8 @@ function loadLocation(name, start){
             }
         }
     }
+    
+    
     rawFile.send(null);
     //start wordt meegegeven met deze functie
     if (start == true){
@@ -223,7 +234,7 @@ function loadLocation(name, start){
       loadDataOfPlayer();
       //staat in keyboard.js en is om de text te updaten 
       refreshPlayerPositionData();
-      loadConnectors();
+      
     }
     if (musicOfLocation != music){
       music = musicOfLocation;
@@ -231,100 +242,15 @@ function loadLocation(name, start){
     }
 }
 
-function loadConnectors(){
-  emptyConnectors();
-  if (north_c!="none"){
-    loadConnector("locations/"+north_c,"#up",north_adj);
-  }
-  if (south_c!="none"){
-    loadConnector("locations/"+south_c,"#down",south_adj);
-  }
-}
 
-function loadConnector(name,where,adjustement){
-  
-  //de connector maps laden denk ik zodat je die ook kan zien als bij de route en de town, geen darkspots te zien daar
-
-  var width_l, height_l;
-
-  var rawFile = new XMLHttpRequest();
-    rawFile.open("GET", name, false);
-    rawFile.onreadystatechange = function ()
-    {
-        if(rawFile.readyState === 4)
-        {
-            if(rawFile.status === 200 || rawFile.status == 0)
-            {
-                var lines = rawFile.responseText.split('\n');
-                for(var line = 0; line < lines.length; line++){
-                  line_txt = lines[line];
-                  prop_val = line_txt.split(":");
-                  property = prop_val[0];
-                  value = prop_val[1];
-                  if (property == "border"){
-                    border = value;
-                  }
-                  if (property == "size"){
-                    size = value;
-                    w_h = size.split("x");
-                    width_l = parseInt(w_h[0]*vmax(10));
-                    height_l = parseInt(w_h[1]*vmax(10));
-                  }
-                  if (property.indexOf("png")>-1){
-                    elemento = document.createElement("div");
-                    elemento.style.width = '10vmax';
-                    elemento.style.height = '10vmax';
-                    pos = value.split(",");
-                    pos_x = pos[0];
-                    pos_y = pos[1];
-                    elemento.style.backgroundImage = "url('tiles/"+property+"')";
-                    elemento.style.backgroundSize = 'cover';
-                    $(where).append(elemento);
-                    elemento.style.position = 'absolute';
-                    elemento.style.left = pos_x*vmax(10) - vmax(10);
-                    elemento.style.top = pos_y*vmax(10) - vmax(10);
-                    if (property.indexOf("ground")>-1)
-                      $(elemento).addClass("ground");
-                    else if (property.indexOf("water")>-1)
-                      $(elemento).addClass("water");
-                    else if (property.indexOf("grass")>-1)
-                      $(elemento).addClass("grass");
-                    else {
-                      $(elemento).addClass("barrier");
-                    }
-                  }
-                }
-                $(where).css("width",width_l);
-                $(where).css("height",height_l);
-                actualLeft = parseInt($("#location").css("left"));
-                [pl_x,pl_y] = obtainPlayerPosition();
-                if (pl_y*vmax(10) > height)
-                  pl_y = 1;
-                if (where == "#up"){
-                  $(where).css("top",-height_l - height-screen_height -pl_y*vmax(10) +vmax(10));
-                  $(where).css("left",actualLeft + adjustement*vmax(10));
-                  width_north = width_l * vmax(10);
-                  height_north = height_l *vmax(10);
-                }
-                if (where == "#down"){
-                  $(where).css("top",-height_l +screen_height- (pl_y*vmax(10))+vmax(10));
-                  $(where).css("left",actualLeft + adjustement*vmax(10));
-                  width_south = width_l * vmax(10);
-                  height_south = height_l *vmax(10);
-                }
-            }
-        }
-    }
-    rawFile.send(null);
-}
 
 function positionPlayer(new_x,new_y){
   x = new_x;
   y = new_y;
   screen_height = parseInt($("#screen").css("height"));
   screen_width = parseInt($("#screen").css("width"));
-  $("#location").css("left", -x*vmax(10)-vmax(10));
-  $("#location").css("top",  -y*vmax(10)-vmax(30));
+  $("#location").css("left", -x*vmax(10));
+  $("#location").css("top",  -y*vmax(10)-vmax(20));
   location_top = parseInt($("#location").css("top"));
   location_left = parseInt($("#location").css("left"));
   location_width = parseInt($("#location").css("width"));
@@ -401,6 +327,7 @@ function emptyConnectors(){
   $("#down").css("height",0);
 }
 
+//dit is om berichten die op een bord staan in een file te kunnen steken in plaats van alles te hardcoden, gebruiken dus!
 function obtainMessage(id_sign){
     var txt_to_return='';
     var rawFile = new XMLHttpRequest();
@@ -427,67 +354,9 @@ function obtainMessage(id_sign){
       return txt_to_return;
   }
 
-  function obtainWhereToWarp(id_warp){
-      var warpToReturn=-1, namepOfMap = '', new_x=1, new_y=1;
-      var rawFile = new XMLHttpRequest();
-      rawFile.open("GET", "events/warps.txt", false);
-      rawFile.onreadystatechange = function ()
-      {
-          if(rawFile.readyState === 4)
-          {
-              if(rawFile.status === 200 || rawFile.status == 0)
-              {
-                var lines = rawFile.responseText.split('\n');
-                for(var line = 0; line < lines.length; line++){
-                  line_txt = lines[line];
-                  prop_val = line_txt.split(",");
-                  property = prop_val[0];
-                  value = prop_val[1];
-                  value2 = prop_val[2];
-                  if (property == id_warp){
-                    nameOfMap=value;
-                    warpToReturn=value2;
-                  }
-                }
-              }
-            }
-        }
-        rawFile.send(null);
-        var rawFile = new XMLHttpRequest();
-        rawFile.open("GET", "locations/"+nameOfMap, false);
-        rawFile.onreadystatechange = function ()
-        {
-            if(rawFile.readyState === 4)
-            {
-                if(rawFile.status === 200 || rawFile.status == 0)
-                {
-                  var lines = rawFile.responseText.split('\n');
-                  for(var line = 0; line < lines.length; line++){
-                      prop_val = lines[line].split(":");
-                      property = prop_val[0];
-                      value = prop_val[1];
-                      if (property=="warp"){
-                          value_v = value.split(",");
-                          idw = value_v[0];
-                          xw = value_v[1];
-                          yw = value_v[2];
-
-                          if (idw == warpToReturn){
-                            new_x = xw;
-                            new_y = yw;
-                          }
-                      }
-                  }
-                }
-            }
-        }
-        rawFile.send(null);
-        return [new_x,new_y,nameOfMap];
-    }
-
 
   function playMusic(){
     s_o_g = document.getElementById("soundOfGame");
     s_o_g.src = "sounds/"+music;
-    s_o_g.play();
+    //s_o_g.play();
   }

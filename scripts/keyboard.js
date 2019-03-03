@@ -1,9 +1,10 @@
 var walkUp='right';
 var walkDown='right';
 var walking=false;
-var speed=200;
+var speed=150; //200
 var facing='down';
 var goDown=false;
+var canWarp = false;
 
 var walking_down = false;
 var walking_up = false;
@@ -59,6 +60,7 @@ function thereIsLedge(pos_x, pos_y, where){
 function movePlayer(){
     //waar je staat
     [pos_x,pos_y] = obtainPlayerPosition();
+    canWarp = true;
   
     //1 naar boven en starten met wandelen
     //  walkUp is om de handen zo te laten bewegen 
@@ -74,7 +76,7 @@ function movePlayer(){
         }
         else if (walkUp=='left'){
           $("#player").css("background-image","url(sprites/walkingUpLeft.png)");
-          walkUp='right';
+          walkUp='right'
         }
       //laat ventje bewegen
         moveEverythingUp(vmax(10));
@@ -88,6 +90,7 @@ function movePlayer(){
             refreshPlayerPositionData();
             checkIfInWarp();
             movePlayer();
+            checkWarp(pos_x,pos_y+1);
         });
       } else {
         console.log("cant move because: " + kamer[pos_x][pos_y-1]);
@@ -188,6 +191,14 @@ function movePlayer(){
         console.log("cant move because: " + kamer[pos_x+1][pos_y]);
       }
     }
+    
+}
+
+function checkWarp(x,y) {
+  if (canWarp) && ((x+"x"+y) in warps){
+    x+"x"+y 
+  }
+  //TODO
 }
 
 function touchGo(dir){

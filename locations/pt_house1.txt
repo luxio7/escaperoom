@@ -67,7 +67,7 @@ ground_house.png:5,8
 ground_house.png:6,8
 ground_house.png:7,8
 ground_house.png:8,8
-warp:1,8,2
-warp:2,3,8
-warp:3,4,8
+warp:1,8,pt_house1_f1,4,4
+warp:2,3,8,pt_house1_f1,4,4
+warp:3,4,8,pt_house1_f1,4,4
 music:pallet_town.mp3

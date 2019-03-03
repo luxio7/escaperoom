@@ -3,3 +3,6 @@
 2,pallet_town.txt,4
 3,pallet_town.txt,4
 4,pt_house1.txt,2
+
+
+pt_house1,pt_house1_f1,[4,4]
