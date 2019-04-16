@@ -198,7 +198,7 @@ function checkWarp(x,y) {
   if (canWarp) && ((x+"x"+y) in warps){
     x+"x"+y 
   }
-  //TODO
+  //TODO lol ik heb geen idee meer wat, succes rik in de toekomst
 }
 
 function touchGo(dir){

@@ -7,8 +7,8 @@
 // running python -m SimpleHTTPServer
 // http://localhost:8000/
 </script>
-<script src="scripts/keyboard.js" ></script>
 <script src="scripts/locations.js"> </script>
+
     
 </head>
 
@@ -22,21 +22,21 @@
   <div id='down'>
   </div>
 
-    <div id='location'>
+  <div id='location'>
 
-      <div id='player'>
-      </div>
-
+  	<div class='players' id='player'>
     </div>
 
-    <audio src="" autostart=false width=1 height=1 id="soundOfGame"></audio>
+  </div>
+
+  <audio src="" autostart=false width=1 height=1 id="soundOfGame"></audio>
 
 </div>
   
 <div id='touchContainer'>
   <div class='touchbar' id='touchUp' onpointerdown='touchStop(); touchGo("up")' onpointerup='touchStop()'></div>
   <div class='touchbar' id='touchMiddle'>
-    v<div class='touchHor' id='touchLeft' onpointerdown='touchStop(); touchGo("left")' onpointerup='touchStop()'></div>
+    <div class='touchHor' id='touchLeft' onpointerdown='touchStop(); touchGo("left")' onpointerup='touchStop()'></div>
     <div class='touchHor' id='touchRight' onpointerdown='touchStop(); touchGo("right")' onpointerup='touchStop()'></div>
   </div>
   <div class='touchbar' id='touchBottom' onpointerdown='touchStop(); touchGo("down")' onpointerup='touchStop()'></div>

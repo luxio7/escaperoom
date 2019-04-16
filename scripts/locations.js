@@ -12,10 +12,59 @@ var kamer;
 var stappen;
 var canWarp = false;
 
+var websocket;
+
 var warps = {};
 
 var width_north=-1, height_north=-1;
 var width_south=-1, height_south=-1;
+
+var tellerPlaats = 1;
+var plaatsWaarHijStaat = 'x1y2';
+
+function openWebsocket(){
+	websocket = new WebSocket('ws://192.168.4.1:8765');
+	websocket.onopen = function(evt) { 
+		console.log('verbinding gemaakt'); 
+		setTimeout(websocket.send('gimme all the dataaa'),1000);
+	};
+	websocket.onclose = function(evt) { console.log('verbinding verbroken'); };
+	websocket.onmessage = function(evt) { onMessage(evt) };
+	websocket.onerror = function(evt) { console.log('error'); };
+}
+
+function onMessage(evt) {
+	// There are two types of messages:
+	// 1. position update -> update:playerID1=Xcoordinaat,Ycoordinaat;playerID2=Xcoordinaat,Ycoordinaat
+	// 2. ...
+	var message = evt.data;
+	
+	console.log('origineel bericht');
+	console.log(message);
+	console.log('--------');
+	
+	if (message.startsWith("update:")) {
+		
+		var messageStukken = message.slice(7, message.length);
+		messageStukken = messageStukken.split(';');
+		
+		for (i = 0; i < messageStukken.length; i++){
+			//positionOtherPlayer(playerID, x_new, y_new)
+			var gesplitst = messageStukken[i].split('=');
+			console.log(gesplitst);
+			var coordinaten = gesplitst[1].split(',');
+			positionOtherPlayer(parseInt(gesplitst[0]),coordinaten[0],coordinaten[1]);
+			console.log('player ' + gesplitst[0] + ' werd geupdate naar: ' + coordinaten[0] + ',' + coordinaten[1]);
+		}
+		
+
+	}else if (false) {
+		console.log('nog maken');
+	}else {
+		console.log('Unknown command from server: ');
+		console.log(message);
+	}
+}
 
 function loadDataOfPlayer(){
   var rawFile = new XMLHttpRequest();
@@ -46,6 +95,24 @@ function loadDataOfPlayer(){
           }
     }
     rawFile.send(null);
+}
+
+//dit was een test om dingen te laten wandelen op een gemakkelijke manier maar het was te lelijk dus niet meer gebruiken
+function loadOtherPlayers(){
+	console.log(plaatsWaarHijStaat);
+	var vorigePlaats = document.getElementById(plaatsWaarHijStaat);
+	if (vorigePlaats.firstChild) {
+		vorigePlaats.removeChild(vorigePlaats.firstChild);
+	};
+	var player2 = document.createElement('div');
+	player2.className = 'players';
+	player2.style.backgroundImage = "url('../sprites/right.png')";
+	plaatsWaarHijStaat='x'+tellerPlaats.toString()+'y2';
+	document.getElementById(plaatsWaarHijStaat).appendChild(player2);
+	tellerPlaats = tellerPlaats + 1;
+	if (tellerPlaats > 8){
+		tellerPlaats = 1;
+	};
 }
 
 function printArray(arrayToPrint) {
@@ -154,7 +221,7 @@ function loadLocation(name, start){
                     elemento.style.position = 'absolute';
                     elemento.style.left = String(pos_x*10 - 10)+'vmax';
                     elemento.style.top = String(pos_y*10 - 10)+'vmax';
-                    if (property.indexOf("ground")>-1){ //{} dit overal zetten want 2 lijnen
+                    if (property.indexOf("ground")>-1){
                       $(elemento).addClass("ground");
                       kamer[pos_x][pos_y] = "ground";
                       stappen[pos_x][pos_y] = 1;
@@ -187,11 +254,7 @@ function loadLocation(name, start){
                     id_element = element_info[0];
                     pos_x = element_info[1];
                     pos_y = element_info[2];
-                    
-                    warps[pos_x+"x"+pos_y] = element_info[3]+element_info[4]+element_info[5];
-                    //bv: warp:1,8,pt_house1_f1,4,4
-                    
-                    
+										
                     elemento = document.createElement("div");
                     elemento.style.width = '10vmax';
                     elemento.style.height = '10vmax';
@@ -207,11 +270,24 @@ function loadLocation(name, start){
                       $(elemento).addClass("warp");
                       $(elemento).prop("id", "warp-"+id_element);
                       
+                    	//bv: warp:1,8,r,pt_house1_f1,4,4 wordt 1x9:[pt_house1_f1,4,4]
+											if (element_info[3] === "r") {
+												warps[(parseInt(pos_x)+1)+"x"+pos_y] = [element_info[4],element_info[5],element_info[6]];
+											} else if (element_info[3] === "l") {
+												warps[(parseInt(pos_x)-1)+"x"+pos_y] = [element_info[4],element_info[5],element_info[6]];
+											} else if (element_info[3] === "u") {
+												warps[pos_x+"x"+(parseInt(pos_y)-1)] = [element_info[4],element_info[5],element_info[6]];
+											} else if (element_info[3] === "d") {
+												warps[pos_x+"x"+(parseInt(pos_y)+1)] = [element_info[4],element_info[5],element_info[6]];
+											}
                     }
                   }
                 }
                 
+								console.log("dit is de kamer");
                 console.log(kamer);
+							  console.log("dit zijn de warps");
+								console.log(warps);
                 printArray(kamer);
               
                 $("#location").css("width",width+"vmax");
@@ -240,9 +316,72 @@ function loadLocation(name, start){
       music = musicOfLocation;
       playMusic();
     }
+	makeNewPlayer(2,5,5);
+	openWebsocket();
 }
 
+function getPositionFromCoordinates(x,y){
+	return [vmax(x*10)-vmax(10),vmax(y*10)-vmax(20)];
+}
 
+var playerPositions = {};
+function makeNewPlayer(playerID, x_pos, y_pos){
+	playerPositions[playerID] = [x_pos,y_pos];
+	var newPlayer = document.createElement('div');
+	newPlayer.className = 'players';
+	newPlayer.id='player'+playerID.toString();
+	newPlayer.style.backgroundImage = "url('../sprites/down.png')";
+	document.getElementById('location').appendChild(newPlayer);
+	[x_pos,y_pos] = getPositionFromCoordinates(x_pos,y_pos);
+	$("#player"+playerID.toString()).css("left",x_pos);
+	$("#player"+playerID.toString()).css("top",y_pos);
+}
+function removePlayer(playerID){
+	document.getElementById('player'+playerID.toString()).remove();
+}
+function positionOtherPlayer(playerID, x_new, y_new){
+	[x_old,y_old] = playerPositions[playerID];
+	[x_new,y_new] = getPositionFromCoordinates(x_new,y_new);
+	$("#player"+playerID.toString()).css("left",x_new);
+	$("#player"+playerID.toString()).css("top",y_new);
+	
+	if (x_old > x_new) {
+		
+		$("#player"+playerID.toString()).animate({
+			'left':x_new
+		},speed,function(){
+			$("#player"+playerID.toString()).css("background-image","url(sprites/left.png)");
+    });
+		
+	} else if (x_old < x_new){
+		
+		$("#player"+playerID.toString()).animate({
+			'left':x_new
+		},speed,function(){
+			$("#player"+playerID.toString()).css("background-image","url(sprites/right.png)");
+    });
+		
+	} 
+		
+	if (y_old > y_new) {
+		
+		$("#player"+playerID.toString()).animate({
+			'top':y_new
+		},speed,function(){
+			$("#player"+playerID.toString()).css("background-image","url(sprites/up.png)");
+    });
+		
+	} else if (y_old < y_new) {
+		
+		$("#player"+playerID.toString()).animate({
+			'top':y_new
+		},speed,function(){
+			$("#player"+playerID.toString()).css("background-image","url(sprites/down.png)");
+    });
+		
+	}
+	playerPositions[playerID] = [x_new,y_new];
+}
 
 function positionPlayer(new_x,new_y){
   x = new_x;
@@ -251,60 +390,10 @@ function positionPlayer(new_x,new_y){
   screen_width = parseInt($("#screen").css("width"));
   $("#location").css("left", -x*vmax(10));
   $("#location").css("top",  -y*vmax(10)-vmax(20));
+	location_left = parseInt($("#location").css("left"));
   location_top = parseInt($("#location").css("top"));
-  location_left = parseInt($("#location").css("left"));
-  location_width = parseInt($("#location").css("width"));
-  location_height = parseInt($("#location").css("height"));
+	$("#player").css("left",-location_left-vmax(10));
   $("#player").css("top",-location_top-vmax(30));
-  $("#player").css("left",-location_left-vmax(10));
-  /*  er zijn geen borders meer
-  $("#borderTop").css("top", -y*vmax(10));
-  $("#borderTop").css("left", -x*vmax(10) + vmax(10));
-  $("#borderTop").css("width",location_width + screen_width - vmax(10));
-  $("#borderLeft").css("left", -x*vmax(10) + vmax(10));
-  $("#borderLeft").css("top", -y*vmax(10));
-  $("#borderLeft").css("height", location_height + screen_height/2 - vmax(5));
-  $("#borderRight").css("left", location_width - vmax(10)*x + vmax(10));
-  $("#borderRight").css("height", location_height + screen_height/2 - vmax(5));
-  $("#borderRight").css("top", -y*vmax(10));
-  $("#borderDown").css("left", vmax(50) - x*vmax(10));
-  $("#borderDown").css("top", -y*vmax(10) - vmax(4));
-  $("#borderDown").css("width",location_width + screen_width - vmax(10));*/
-}
-
-function checkIfLocationChanged(){
-
-  [pl_x,pl_y] = obtainPlayerPosition();
-  if (pl_y == 0 && north_c != "none"){ // has gone to the north connector
-    emptyConnectors();
-    loadLocation("locations/"+north_c, false);
-    $("#location").css("top",-height + (screen_height/2)+vmax(5));
-    $("#player").css("top",height-vmax(10) -vmax(2));
-    $("#borderTop").css("top",-height);
-    $("#borderRight").css("left",width-(pl_x*vmax(10))-vmax(10));
-    $("#borderRight").css("height",height + screen_height/2 - vmax(5));
-    $("#borderRight").css("top",-height);
-    $("#borderDown").css("top",-height - screen_height/2 + vmax(5));
-    $("#borderLeft").css("left",-width+(pl_x*vmax(10))-vmax(10));
-    $("#borderLeft").css("top",-height);
-    $("#borderLeft").css("height",height + screen_height/2 - vmax(5));
-    loadConnectors();
-  }
-  if (pl_y > height/vmax(10)  && south_c != "none"){ // has gone to the south connector
-    emptyConnectors();
-    loadLocation("locations/"+south_c, false);
-    $("#location").css("top",(screen_height/2)-vmax(5));
-    $("#player").css("top",-vmax(2));
-    $("#borderTop").css("top",-vmax(10));
-    $("#borderRight").css("left",width - pl_x*vmax(10));
-    $("#borderRight").css("height",height + screen_height/2 - vmax(10));
-    $("#borderRight").css("top",-vmax(20));
-    $("#borderDown").css("top",-height + 3*screen_height/2 - vmax(10));
-    $("#borderLeft").css("left",-(pl_x-1)*vmax(10));
-    $("#borderLeft").css("top",-vmax(10));
-    $("#borderLeft").css("height",height + screen_height/2 - vmax(10));
-    loadConnectors();
-  }
 }
 
 function emptyLocation(){
@@ -316,15 +405,6 @@ function emptyLocation(){
       i = i-1;
     }
   }
-}
-
-function emptyConnectors(){
-  $("#up").empty();
-  $("#up").css("width",0);
-  $("#up").css("height",0);
-  $("#down").empty();
-  $("#down").css("width",0);
-  $("#down").css("height",0);
 }
 
 //dit is om berichten die op een bord staan in een file te kunnen steken in plaats van alles te hardcoden, gebruiken dus!
@@ -355,8 +435,451 @@ function obtainMessage(id_sign){
   }
 
 
-  function playMusic(){
-    s_o_g = document.getElementById("soundOfGame");
-    s_o_g.src = "sounds/"+music;
-    //s_o_g.play();
+function playMusic(){
+  s_o_g = document.getElementById("soundOfGame");
+  s_o_g.src = "sounds/"+music;
+  //s_o_g.play();
+}
+
+
+var walkUp='right';
+var walkDown='right';
+var walking=false;
+var speed=150; //200
+var facing='down';
+var goDown=false;
+var canWarp = false;
+
+var walking_down = false;
+var walking_up = false;
+var walking_left = false;
+var walking_right = false;
+
+function vh(v) {
+  var h = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+  return (v * h) / 100;
+}
+
+function vw(v) {
+  var w = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+  return (v * w) / 100;
+}
+
+function vmin(v) {
+	if (v == 0) {
+		return 0;
+	} else {
+		return Math.min(vh(v), vw(v));
+	}
+}
+
+function vmax(v) {
+	if (v == 0) {
+		return 0;
+	} else {
+		return Math.max(vh(v), vw(v));
+	}
+}
+
+function thereIsBarrier(pos_x, pos_y, where){
+  var thereIs = false;
+  $("#"+where).find(".barrier").each(function(index){
+    barrier_l = parseInt($(this).css("left"))/10 + 1;
+    barrier_t = parseInt($(this).css("top"))/10 + 1;
+    if (barrier_l == pos_x && barrier_t == pos_y){
+      thereIs = true;
+    }
+
+  });
+  return thereIs;
+}
+
+function thereIsLedge(pos_x, pos_y, where){
+  var thereIs = false;
+  $("#"+where).find(".ledge").each(function(index){
+    ledge_l = parseInt($(this).css("left"))/10 + 1;
+    ledge_t = parseInt($(this).css("top"))/10 + 1;
+    if (ledge_l == pos_x && ledge_t == pos_y){
+      thereIs = true;
+    }
+
+  });
+  return thereIs;
+}
+
+function movePlayer(){
+    //waar je staat
+    [pos_x,pos_y] = obtainPlayerPosition();
+    canWarp = true;
+  
+    //1 naar boven en starten met wandelen
+    //  walkUp is om de handen zo te laten bewegen 
+    
+      if (walking_up && walking==false){
+				checkWarp(pos_x,pos_y-1);
+        $("#player").css("background-image","url(sprites/up.png)")
+        if (stappen[pos_x][pos_y-1]) {
+        walking = true;
+        facing = 'up';
+        if (walkUp=='right'){
+          $("#player").css("background-image","url(sprites/walkingUpRight.png)");
+          walkUp='left';
+        }
+        else if (walkUp=='left'){
+          $("#player").css("background-image","url(sprites/walkingUpLeft.png)");
+          walkUp='right'
+        }
+      //laat ventje bewegen
+        moveEverythingUp(vmax(10));
+        actualTop = parseInt($("#player").css("top"));
+        newTop = actualTop-vmax(10);
+        $("#player").animate({
+            'top':newTop
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/up.png)");
+            //checkIfLocationChanged();
+            refreshPlayerPositionData();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x][pos_y-1]);
+      }
+    }     
+  
+    //2 naar beneden wandelen
+  
+    else if (walking_down && walking==false){ //down
+      $("#player").css("background-image","url(sprites/down.png)")
+			checkWarp(pos_x,pos_y+1);
+      if (stappen[pos_x][pos_y+1]){
+        walking = true;
+        facing = 'down';
+
+        if (walkDown=='right'){
+          $("#player").css("background-image","url(sprites/walkingDownRight.png)");
+          walkDown='left';
+        }
+        else if (walkDown=='left'){
+          $("#player").css("background-image","url(sprites/walkingDownLeft.png)");
+          walkDown='right';
+        }
+        moveEverythingUp(-1*vmax(10));
+        actualTop = parseInt($("#player").css("top"));
+        newTop = actualTop+vmax(10);
+        $("#player").animate({
+            'top':newTop
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/down.png)");
+            //checkIfLocationChanged();
+            refreshPlayerPositionData();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x][pos_y+1]);
+      }
   }
+    //3 naar links wandelen
+  
+    else if (walking_left && walking==false){ //left
+      $("#player").css("background-image","url(sprites/left.png)")
+			checkWarp(pos_x-1,pos_y);
+      if (stappen[pos_x-1][pos_y]) {
+        walking=true;
+        facing = 'left';
+        if (parseInt($("#location").css("left")) == vmax(50)){
+          $("#player").css("background-image","url(sprites/left.png)");
+          walking_left=false;
+          walking=false;
+          return;
+        }
+
+        $("#player").css("background-image","url(sprites/walkingLeft.png)");
+        moveEverythingLeft(vmax(10));
+        actualLeft = parseInt($("#player").css("left"));
+        newLeft = actualLeft-vmax(10);
+        $("#player").animate({
+            'left':newLeft
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/left.png)");
+            //checkIfLocationChanged();
+            refreshPlayerPositionData();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x-1][pos_y]);
+      }
+  }
+    //4 naar rechts wandelen
+  
+    else if (walking_right && walking==false){ //right
+      $("#player").css("background-image","url(sprites/right.png)")
+			checkWarp(pos_x+1,pos_y);
+      if (stappen[pos_x+1][pos_y]) {
+        walking=true;
+        facing='right';
+        if (parseInt($("#location").css("left")) == -(parseInt($("#location").css("width")) - vmax(50))){
+          $("#player").css("background-image","url(sprites/right.png)");
+          walking_right=false;
+          walking=false;
+          return;
+        }
+
+        $("#player").css("background-image","url(sprites/walkingRight.png)");
+        moveEverythingLeft(-1*vmax(10));
+        actualLeft = parseInt($("#player").css("left"));
+        newLeft = actualLeft+vmax(10);
+        $("#player").animate({
+            'left':newLeft
+        },speed,function(){
+            $("#player").css("background-image","url(sprites/right.png)");
+            //checkIfLocationChanged();
+            refreshPlayerPositionData();
+            movePlayer();
+        });
+      } else {
+        console.log("cant move because: " + kamer[pos_x+1][pos_y]);
+      }
+			
+    }
+    walking = false;
+};
+
+//gaat pas warpen bij een beweging 'uit de map' -> bv als je uit de deur wandelt, niet als je op de mat staat
+function checkWarp(x,y) {
+	console.log("check: " + x + " " + y);
+  if ((canWarp) && ((x+"x"+y) in warps)){
+		console.log("warp found");
+		info = warps[x+"x"+y];
+    fadeToBlackAndWarp(info[1],info[2],info[0]);
+  }
+};
+
+function touchGo(dir){
+    if (walking_down || walking_up || walking_left || walking_right || walking) // if already walking, ignore any input
+      return;
+    if (dir == 'left')
+      walking_left = true;
+    else if (dir == 'up')
+      walking_up = true;
+    else if (dir == 'right')
+      walking_right = true;
+    else if (dir == 'down')
+      walking_down = true;
+    movePlayer();
+  
+  if (false){   //TODO nog knop maken om dingen te lezen en dan is dat met dit ofzo
+    if (walking)
+      return;
+    if (facing == 'up'){
+      [pos_x, pos_y] = obtainPlayerPosition();
+      id_sign = thereIsSign(pos_x,pos_y-1);
+      if (id_sign>-1){
+        message = obtainMessage(id_sign);
+        alert(message);
+      }
+    }
+    if (facing == 'down'){
+      [pos_x, pos_y] = obtainPlayerPosition();
+      id_sign = thereIsSign(pos_x,pos_y+1);
+      if (id_sign>-1){
+        message = obtainMessage(id_sign);
+        alert(message);
+      }
+    }
+    if (facing == 'left'){
+      [pos_x, pos_y] = obtainPlayerPosition();
+      id_sign = thereIsSign(pos_x-1,pos_y);
+      if (id_sign>-1){
+        message = obtainMessage(id_sign);
+        alert(message);
+      }
+    }
+    if (facing == 'right'){
+      [pos_x, pos_y] = obtainPlayerPosition();
+      id_sign = thereIsSign(pos_x+1,pos_y);
+      if (id_sign>-1){
+        message = obtainMessage(id_sign);
+        alert(message);
+      }
+    }
+  }
+};
+
+function touchStop(){
+    walking_down=false;
+    walking_up=false;
+    walking_left=false;
+    walking_right=false;
+};
+
+function isInRug(pos_x,pos_y){
+  var found=false;
+  $("#location").find(".rug").each(function(index){
+    rug_l = parseInt($(this).css("left"))/vmax(10) + 1;
+    rug_t = parseInt($(this).css("top"))/vmax(10) + 1;
+    if (rug_l == pos_x && rug_t == pos_y){
+      found=true;
+    }
+  });
+  return found;
+};
+
+function jumpDown(){
+  moveEverythingUp(-1*vmax(10));
+  shadow = document.createElement("div");
+  $(shadow).addClass("shadow");
+  topOfShadow = parseInt($("#player").css("top"))+vmax(10);
+  leftOfShadow = parseInt($("#player").css("left"));
+  $(shadow).css("top",topOfShadow);
+  $(shadow).css("left",leftOfShadow);
+  document.getElementById("location").appendChild(shadow);
+  actualTop = parseInt($("#player").css("top"));
+  newTop = actualTop+vmax(5);
+  $(shadow).animate({
+    'top':topOfShadow+vmax(20)
+  },speed*2);
+  $("#player").animate({
+      'top':newTop
+  },speed,function(){
+    moveEverythingUp(-1*vmax(10));
+    actualTop = parseInt($("#player").css("top"));
+    newTop = actualTop+vmax(15);
+    $("#player").animate({
+        'top':newTop
+    },speed,function(){
+        walking_down=false;
+        walking=false;
+        document.getElementById("location").removeChild(shadow);
+        refreshPlayerPositionData();
+      });
+  });
+}
+
+function simulateWalkDown(){
+  if (walkDown=='right'){
+    $("#player").css("background-image","url(sprites/walkingDownRight.png)");
+    walkDown='left';
+  }
+  else if (walkDown=='left'){
+    $("#player").css("background-image","url(sprites/walkingDownLeft.png)");
+    walkDown='right';
+  }
+  moveEverythingUp(-1*vmax(10));
+  actualTop = parseInt($("#player").css("top"));
+  newTop = actualTop+vmax(10);
+  $("#player").animate({
+      'top':newTop
+  },speed,function(){
+      $("#player").css("background-image","url(sprites/down.png)");
+      //checkIfLocationChanged();
+      refreshPlayerPositionData();
+      walking=false;
+  });
+}
+
+function checkIfInRugWarp(){
+  [pos_x,pos_y] = obtainPlayerPosition();
+  var idWarp = -1;
+  $("#location").find(".warp").each(function(index){
+    warp_l = parseInt($(this).css("left"))/vmax(10) + 1;
+    warp_t = parseInt($(this).css("top"))/vmax(10) + 1;
+    if (warp_l == pos_x && warp_t == pos_y){
+      idWarp = $(this).prop("id").split("-")[1];
+    }
+  });
+  if (idWarp>-1){
+    if (isInRug(pos_x,pos_y)==true){
+      walking=true;
+      [new_x,new_y,nameOfMap] = obtainWhereToWarp(idWarp);
+      goDown=true;
+      fadeToBlackAndWarp(new_x,new_y,nameOfMap);
+    }
+  }
+}
+
+//TODO blackscreen bestaat niet meer in mijn code
+function fadeToBlackAndWarp(new_x,new_y,nameOfMap){
+	console.log("komt in fade to black and warp");
+  $('#blackScreen').css("width",screen_width);
+  $('#blackScreen').css("height",screen_height);
+  $('#blackScreen').animate({
+       opacity: 1,
+     }, 300, function() {
+         loadLocation("locations/"+nameOfMap,false);
+         positionPlayer(new_x,new_y);
+         refreshPlayerPositionData();
+         $('#blackScreen').css("width",0);
+         $('#blackScreen').css("height",0);
+         $('#blackScreen').css("opacity",0);
+         if (goDown){
+            simulateWalkDown();
+            goDown=false;
+         }
+         else{
+           walking=false;
+         }
+     });
+}
+
+function thereIsSign(pos_x,pos_y){
+  var id_sign = -1;
+  $("#location").find(".sign").each(function(index){
+    sign_l = parseInt($(this).css("left"))/vmax(10) + 1;
+    sign_t = parseInt($(this).css("top"))/vmax(10) + 1;
+    if (sign_l == pos_x && sign_t == pos_y){
+        id_v = $(this).prop("id").split("-");
+        id_sign = id_v[1];
+    }
+
+  });
+  return id_sign;
+}
+
+function obtainPlayerPosition(){
+  l= Math.round((parseInt($("#player").css("left")) + vmax(10))/vmax(10));
+  t= Math.round((parseInt($("#player").css("top")) + vmax(10))/vmax(10));
+  return [l,t]
+}
+
+function refreshPlayerPositionData(){
+  [l,t] = obtainPlayerPosition();
+  $("#positionOfPlayer").text(l+ ", " + t);
+  $("#locationOfPlayer").text(location_name);
+}
+
+function moveEverythingLeft(value){
+    actualLeft = parseInt($("#location").css("left"));
+    newLeft = actualLeft+value;
+    $("#location").animate({
+      'left':newLeft
+    },speed);
+    actualLeft = parseInt($("#up").css("left"));
+    newLeft = actualLeft+value;
+    $("#up").animate({
+      'left':newLeft
+    },speed);
+    actualLeft = parseInt($("#down").css("left"));
+    newLeft = actualLeft+value;
+    $("#down").animate({
+      'left':newLeft
+    },speed);
+}
+
+function moveEverythingUp(value){
+    actualTop = parseInt($("#location").css("top"));
+    newTop = actualTop+value;
+    $("#location").animate({
+      'top':newTop
+    },speed);
+    actualTop = parseInt($("#up").css("top"));
+    newTop = actualTop+value;
+    $("#up").animate({
+      'top':newTop
+    },speed);
+    actualLeft = parseInt($("#down").css("top"));
+    newLeft = actualLeft+value;
+    $("#down").animate({
+      'top':newLeft
+    },speed);
+}
+
